@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>İşçi reyestri</title>
+<meta name="description" content="İşçilərin şəxsi məlumatlarının, kvota, vəzifə, məzuniyyət, təhsil və əmək haqqı qeydiyyatı.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6B4A'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h9' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+<div class="wrap">
+
+<header class="top">
+  <div class="title">
+    <div class="eyebrow">Kadrlar · Reyestr</div>
+    <h1>İşçilərin siyahısı</h1>
+    <p class="muted">Hər sətir bir işçi kartıdır. Məlumatlar bu brauzerdə saxlanılır.</p>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn" data-action="export-xlsx">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Excel-ə çıxar
+    </button>
+    <button type="button" class="btn" data-action="backup">Ehtiyat nüsxə</button>
+    <label class="btn">Bərpa et<input type="file" accept="application/json,.json" id="restoreInput" hidden></label>
+    <button type="button" class="btn primary" data-action="new">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Yeni işçi
+    </button>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Siyahılar" id="tabs"></nav>
+
+<section class="stats" id="stats" aria-label="Xülasə"></section>
+
+<section class="card filters" aria-label="Filtrlər">
+  <div class="filter-row">
+    <div class="field grow2">
+      <label for="q">Axtarış</label>
+      <input id="q" type="search" placeholder="Ad, soyad və ya FİN" autocomplete="off">
+    </div>
+    <div class="field"><label for="fDep">Departament</label><select id="fDep" data-filter="dep"></select></div>
+    <div class="field"><label for="fVez">Vəzifə</label><select id="fVez" data-filter="vez"></select></div>
+    <div class="field"><label for="fSobe">Mağazada tutduğu şöbə</label><select id="fSobe" data-filter="sobe"></select></div>
+    <div class="field"><label for="fIsyeri">İş yeri</label><select id="fIsyeri" data-filter="isyeri"></select></div>
+  </div>
+  <div class="filter-row">
+    <div class="field auto">
+      <span class="lbl" id="stLbl">Status</span>
+      <div class="seg" role="group" aria-labelledby="stLbl" id="statusSeg"></div>
+    </div>
+    <div class="field auto">
+      <span class="lbl" id="quickLbl">Sürətli filtr</span>
+      <div class="seg" role="group" aria-labelledby="quickLbl" id="quickSeg"></div>
+    </div>
+  </div>
+  <div class="filter-row groups" id="groupRow">
+    <span class="lbl">Sütun bölmələri:</span>
+    <div id="groupToggles" class="chips"></div>
+  </div>
+</section>
+
+<div class="main">
+  <section class="card list" aria-label="Siyahı">
+    <div class="list-head"><strong id="shownLabel"></strong><span class="muted small" id="colLabel"></span></div>
+    <div class="scroll"><table class="grid" id="grid"></table></div>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+  <aside class="card panel" id="panel" aria-label="İşçi kartı" hidden></aside>
+</div>
+
+</div>
+</div>
+
+<!-- Datalist-lər: sərbəst mətn sahələrində təkliflər -->
+<datalist id="dl-vezife"></datalist>
+<datalist id="dl-dep"></datalist>
+<datalist id="dl-isyeri"></datalist>
+
+<!-- İşçi kartı forması -->
+<dialog id="formDlg" class="dlg wide" aria-labelledby="formTitle">
+  <form id="empForm" novalidate>
+    <div class="dlg-head">
+      <div class="photo">
+        <img id="fotoImg" alt="" hidden>
+        <svg id="fotoPh" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="dlg-title">
+        <div class="eyebrow light">İşçilərin şəxsi məlumatlarının doldurulması</div>
+        <h2 id="formTitle">Yeni işçi kartı</h2>
+        <div class="photo-actions">
+          <label class="btn ghost-light">Şəkil yüklə<input type="file" accept="image/*" id="fotoInput" hidden></label>
+          <button type="button" class="btn ghost-light" id="fotoDel" hidden>Şəkli sil</button>
+        </div>
+      </div>
+      <button type="button" class="icon-btn light" data-close aria-label="Formanı bağla"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
+    </div>
+    <div class="dlg-body" id="formBody"></div>
+    <div class="dlg-foot">
+      <div class="foot-msg" id="formMsg"><span class="req">*</span> işarəli sahələr məcburidir</div>
+      <div class="foot-btns">
+        <button type="button" class="btn" data-close>Ləğv et</button>
+        <button type="submit" class="btn primary">Yadda saxla</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Xitam pəncərəsi -->
+<dialog id="xitamDlg" class="dlg narrow" aria-labelledby="xitamTitle">
+  <form id="xitamForm" novalidate>
+    <div class="dlg-plain-head">
+      <div class="eyebrow danger">Əmək müqaviləsinə xitam</div>
+      <h2 id="xitamTitle"></h2>
+      <p class="muted small" id="xitamSub"></p>
+    </div>
+    <div class="dlg-body stack">
+      <div class="field"><label for="xDate">İşdən çıxma tarixi<span class="req"> *</span></label><input id="xDate" type="date" required></div>
+      <div class="field"><label for="xReason">Xitam səbəbi<span class="req"> *</span></label><select id="xReason" required></select></div>
+      <div class="field"><label for="xNote">Əmr nömrəsi / qeyd</label><input id="xNote" type="text" placeholder="Məs.: Əmr № 145-K"></div>
+      <div class="err" id="xitamErr" role="alert" hidden></div>
+      <p class="note">Təsdiq edəndən sonra işçi «İnaktiv» statusuna keçir və aktiv siyahıdan çıxır. Kartı silinmir — «İnaktiv» filtrində görünür.</p>
+    </div>
+    <div class="dlg-foot end">
+      <button type="button" class="btn" data-close>Ləğv et</button>
+      <button type="submit" class="btn danger">Xitamı təsdiqlə</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+  <span id="toastText"></span>
+  <button type="button" id="toastUndo" hidden>Geri al</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="js/data.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>
